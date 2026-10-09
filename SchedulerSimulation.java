@@ -151,6 +151,9 @@ class Process implements Runnable {
 }
 
 public class SchedulerSimulation {
+
+    // Feature 2: Counts the number of context switches
+private static int contextSwitchCount = 0;
     public static void main(String[] args) {
         // ⚠️ IMPORTANT: Put your student ID here to seed the random number generator
         // This makes your output unique to you - DO NOT forget to change this!
@@ -222,11 +225,26 @@ public class SchedulerSimulation {
         System.out.println(Colors.BOLD + Colors.GREEN + 
                           "╚════════════════════════════════════════════════════════════════════════════════╝" + 
                           Colors.RESET + "\n");
+
+                          
+        String previousProcessName = null;     // Keeps track of the previously running process
         
         // Loop to manage the scheduling of processes
         while (!processQueue.isEmpty()) {
             // Get the next thread from the queue (FIFO)
             Thread currentThread = processQueue.poll(); // Dequeues the next thread
+
+
+            // Get the process that is currently running
+            Process currentProcess = processMap.get(currentThread);   // Get the process that is currently running
+
+                                // Count a context switch when the CPU moves to a different process
+            if (previousProcessName != null &&
+                !previousProcessName.equals(currentProcess.getName())) {
+                    contextSwitchCount++;
+}
+
+previousProcessName = currentProcess.getName();
             
             // Print the current process queue (list of process IDs in the queue)
             System.out.println(Colors.BOLD + Colors.MAGENTA + "┌─ Ready Queue " + "─".repeat(65) + Colors.RESET);
@@ -273,6 +291,13 @@ public class SchedulerSimulation {
             }
         }
         
+
+                    // Display the total number of context switches
+        System.out.println("Total context switches: " + contextSwitchCount);
+
+
+
+
         // End of the scheduler simulation
         System.out.println(Colors.BOLD + Colors.BRIGHT_GREEN + 
                           "╔════════════════════════════════════════════════════════════════════════════════╗" + 
