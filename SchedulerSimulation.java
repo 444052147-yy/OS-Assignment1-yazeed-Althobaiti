@@ -31,6 +31,14 @@ class Process implements Runnable {
     private int remainingTime; // Time left for the process to finish its execution
     private int priority;     // Process priority from 1 to 10
 
+    // Feature 3: Tracks process creation time and total waiting time
+    private long creationTime;
+    private long waitingTime;
+
+    // Stores the time when the process enters the ready queue
+    private long readyQueueEnterTime;
+
+
     // Constructor to initialize the process with name, burst time, and time quantum
     public Process(String name, int burstTime, int timeQuantum, int priority) {
         this.name = name;
@@ -38,6 +46,9 @@ class Process implements Runnable {
         this.timeQuantum = timeQuantum;
         this.remainingTime = burstTime; // Initially, remaining time is equal to the burst time
            this.priority = priority;
+            // Record the time when this process is created
+            this.creationTime = System.currentTimeMillis();
+            this.waitingTime = 0;
     }
 
     // This method will be called when the thread for this process is started
@@ -125,11 +136,31 @@ class Process implements Runnable {
             System.out.println(Colors.RED + "  ✗ " + name + " was interrupted." + Colors.RESET);
         }
     }
+
+
+
+                // Records when the process enters the ready queue
+    public void markReady() {
+        readyQueueEnterTime = System.currentTimeMillis();
+}
+
+            // Adds the time spent waiting in the ready queue
+    public void markStarted() {
+            waitingTime += System.currentTimeMillis() - readyQueueEnterTime;
+}
+
+
     
 
     public int getPriority() {
     return priority;
    }
+
+   public long getWaitingTime() {
+    return waitingTime;
+}
+
+   
 
     // Getter methods for process name, burst time, and remaining time
     public String getName() {
@@ -167,6 +198,10 @@ private static int contextSwitchCount = 0;
         
         // Generate random number of processes between 10 and 20
         int numProcesses = 10 + random.nextInt(11); // Random number between 10 and 20
+
+
+        // Store all processes for the final summary
+        Process[] allProcesses = new Process[numProcesses];
         
         // Queue to manage processes in a First-In-First-Out (FIFO) order
         Queue<Thread> processQueue = new LinkedList<>();
@@ -209,6 +244,8 @@ private static int contextSwitchCount = 0;
             // Create a new process object with a unique name, burst time, and the defined time quantum
             int priority = 1 + random.nextInt(10);
             Process process = new Process("P" + i, burstTime, timeQuantum, priority);
+
+            allProcesses[i - 1] = process;
             
             // Add the process to the ready queue and the map
             addProcessToQueue(process, processQueue, processMap);
@@ -237,6 +274,11 @@ private static int contextSwitchCount = 0;
 
             // Get the process that is currently running
             Process currentProcess = processMap.get(currentThread);   // Get the process that is currently running
+
+
+
+            // Add the time this process spent waiting in the ready queue
+            currentProcess.markStarted();
 
                                 // Count a context switch when the CPU moves to a different process
             if (previousProcessName != null &&
@@ -296,6 +338,23 @@ previousProcessName = currentProcess.getName();
         System.out.println("Total context switches: " + contextSwitchCount);
 
 
+        System.out.println("\nProcess Summary:");
+        System.out.printf("%-15s %-15s %-15s %-15s%n",
+        "Process Name", "Burst Time", "Waiting Time", "Turnaround Time");
+
+
+        for (Process process : allProcesses) {
+    long waitingTime = process.getWaitingTime();
+    long turnaroundTime = waitingTime + process.getBurstTime();
+
+    System.out.printf("%-15s %-15d %-15d %-15d%n",
+            process.getName(),
+            process.getBurstTime(),
+            waitingTime,
+            turnaroundTime);
+}
+
+
 
 
         // End of the scheduler simulation
@@ -316,6 +375,11 @@ previousProcessName = currentProcess.getName();
                                         Map<Thread, Process> processMap) {
         // Create a new thread to run the process
         Thread thread = new Thread(process);
+
+
+
+        // Record when the process enters the ready queue
+        process.markReady();
         
         // Add the thread to the ready queue
         processQueue.add(thread);
